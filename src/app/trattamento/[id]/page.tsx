@@ -16,13 +16,26 @@ type Service = {
 
 export const dynamic = 'force-dynamic'
 
-export default async function TreatmentDetail({ params }: { params: { id: string } }) {
+// 👇 props come Promise, così non rompe più su PageProps
+type TreatmentDetailProps = {
+  params: Promise<{
+    id: string
+  }>
+}
+
+export default async function TreatmentDetail({ params }: TreatmentDetailProps) {
   const supabase = createServiceRoleClient()
+
+  // 👇 risolviamo params prima di usarlo
+  const resolvedParams = await params
+  const id = resolvedParams.id
 
   const { data: s, error } = await supabase
     .from('services')
-    .select('id,name,description,duration_minutes,price_cents,image_url,categories(name,slug)')
-    .eq('id', params.id)
+    .select(
+      'id,name,description,duration_minutes,price_cents,image_url,categories(name,slug)'
+    )
+    .eq('id', id)
     .maybeSingle<Service>()
 
   if (error) throw new Error(error.message)
@@ -31,7 +44,9 @@ export default async function TreatmentDetail({ params }: { params: { id: string
       <div className="card mt-24">
         <h1 className="text-xl font-semibold text-silver-100">Trattamento non trovato</h1>
         <div className="mt-4">
-          <Link href="/" className="btn">Torna alla Home</Link>
+          <Link href="/" className="btn">
+            Torna alla Home
+          </Link>
         </div>
       </div>
     )
@@ -43,30 +58,33 @@ export default async function TreatmentDetail({ params }: { params: { id: string
     <div className="container mt-24">
       <div className="flex items-center justify-between mb-6">
         <LaserHeading>{s.name}</LaserHeading>
-        <Link href="/" className="btn-ghost">← Home</Link>
+        <Link href="/" className="btn-ghost">
+          ← Home
+        </Link>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-
-        
-<div className="bg-night-800 border border-night-700">
-  <div className="relative w-full h-[320px] md:h-[420px]">
-    <Image
-      src={s.image_url || '/placeholder-treatment.jpg'}
-      alt={s.name}
-      fill
-      className="object-cover"
-      sizes="(min-width:1024px) 50vw, 100vw"
-      priority
-    />
-  </div>
-</div>
+        <div className="bg-night-800 border border-night-700">
+          <div className="relative w-full h-[320px] md:h-[420px]">
+            <Image
+              src={s.image_url || '/placeholder-treatment.jpg'}
+              alt={s.name}
+              fill
+              className="object-cover"
+              sizes="(min-width:1024px) 50vw, 100vw"
+              priority
+            />
+          </div>
+        </div>
 
         <div className="card space-y-4">
           {s.categories?.name && (
             <p className="text-silver-400 text-sm">
               Categoria:{' '}
-              <Link href={`/categoria/${s.categories.slug}`} className="underline underline-offset-4">
+              <Link
+                href={`/categoria/${s.categories.slug}`}
+                className="underline underline-offset-4"
+              >
                 <span className="text-silver-100">{s.categories.name}</span>
               </Link>
             </p>
@@ -87,8 +105,15 @@ export default async function TreatmentDetail({ params }: { params: { id: string
           )}
 
           <div className="pt-4 flex gap-3">
-            <a href={`/booking?serviceId=${encodeURIComponent(s.id)}`} className="btn">Prenota subito</a>
-            <a href="/listino" className="btn-ghost">Vedi tutto il listino</a>
+            <Link
+              href={`/booking?serviceId=${encodeURIComponent(s.id)}`}
+              className="btn"
+            >
+              Prenota subito
+            </Link>
+            <Link href="/listino" className="btn-ghost">
+              Vedi tutto il listino
+            </Link>
           </div>
         </div>
       </div>
