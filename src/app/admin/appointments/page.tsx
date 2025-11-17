@@ -6,8 +6,9 @@ import { createClient } from '../../../lib/supabaseClient'
 
 type Appointment = {
   id: string
-  customers?: { full_name: string }
-  services?: { name: string }
+  // Supabase qui ti restituisce *array* di relazioni
+  customers?: { full_name: string }[] | null
+  services?: { name: string }[] | null
   starts_at: string
   ends_at: string
   status: string
@@ -51,7 +52,7 @@ export default function AppointmentsPage() {
           .lte('starts_at', end.toISOString()),
       ])
 
-      if (appts.data) setAppointments(appts.data)
+      if (appts.data) setAppointments(appts.data as unknown as Appointment[])
       if (serv.data) setServices(serv.data)
       if (cust.data) setCustomers(cust.data)
       setTodayCount(today.count || 0)
@@ -75,7 +76,8 @@ export default function AppointmentsPage() {
               'id,starts_at,ends_at,status, customers(full_name), services(name)'
             )
             .order('starts_at', { ascending: true })
-          if (appts) setAppointments(appts)
+
+          if (appts) setAppointments(appts as unknown as Appointment[])
 
           const now = new Date()
           const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
@@ -198,39 +200,44 @@ export default function AppointmentsPage() {
             <p className="text-silver-400 text-sm">Nessun appuntamento al momento.</p>
           ) : (
             <ul className="space-y-2">
-              {appointments.map((a) => (
-                <li
-                  key={a.id}
-                  className="flex items-center justify-between border border-white/10 p-3 bg-black/20 hover:bg-black/30 transition"
-                >
-                  <div>
-                    <div className="font-medium text-white">
-                      {a.customers?.full_name ?? '—'} • {a.services?.name ?? '—'}
-                    </div>
-                    <div className="text-sm text-silver-400">
-                      {new Date(a.starts_at).toLocaleString('it-IT', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        day: '2-digit',
-                        month: '2-digit',
-                      })}{' '}
-                      →{' '}
-                      {new Date(a.ends_at).toLocaleString('it-IT', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}{' '}
-                      • {a.status}
-                    </div>
-                  </div>
+              {appointments.map((a) => {
+                const customerName = a.customers?.[0]?.full_name ?? '—'
+                const serviceName = a.services?.[0]?.name ?? '—'
 
-                  <button
-                    onClick={() => cancelAppointment(a.id)}
-                    className="px-3 py-2 text-sm border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors"
+                return (
+                  <li
+                    key={a.id}
+                    className="flex items-center justify-between border border-white/10 p-3 bg-black/20 hover:bg-black/30 transition"
                   >
-                    Annulla
-                  </button>
-                </li>
-              ))}
+                    <div>
+                      <div className="font-medium text-white">
+                        {customerName} • {serviceName}
+                      </div>
+                      <div className="text-sm text-silver-400">
+                        {new Date(a.starts_at).toLocaleString('it-IT', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          day: '2-digit',
+                          month: '2-digit',
+                        })}{' '}
+                        →{' '}
+                        {new Date(a.ends_at).toLocaleString('it-IT', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}{' '}
+                        • {a.status}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => cancelAppointment(a.id)}
+                      className="px-3 py-2 text-sm border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
+                      Annulla
+                    </button>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>
