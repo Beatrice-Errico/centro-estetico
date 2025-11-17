@@ -36,8 +36,17 @@ const CATS_UI = {
   },
 } as const
 
-export default async function CategoriaPage({ params }: { params: { slug: string } }) {
-  const slug = (params.slug ?? '').toLowerCase() as keyof typeof CATS_UI
+// 👇 props tipizzate come vuole Next (params è una Promise)
+type CategoriaPageProps = {
+  params: Promise<{
+    slug: string
+  }>
+}
+
+export default async function CategoriaPage({ params }: CategoriaPageProps) {
+  // 👇 risolviamo la Promise e prendiamo lo slug
+  const resolvedParams = await params
+  const slug = (resolvedParams.slug ?? '').toLowerCase() as keyof typeof CATS_UI
   const ui = CATS_UI[slug]
 
   if (!ui) {
@@ -45,7 +54,9 @@ export default async function CategoriaPage({ params }: { params: { slug: string
       <div className="card text-center py-16 mt-24">
         <h1 className="text-2xl text-silver-100">Categoria non trovata</h1>
         <p className="text-silver-400 mt-2">La categoria richiesta non esiste o è stata rimossa.</p>
-        <Link href="/listino" className="btn mt-4">Vai al listino</Link>
+        <Link href="/listino" className="btn mt-4">
+          Vai al listino
+        </Link>
       </div>
     )
   }
@@ -53,11 +64,12 @@ export default async function CategoriaPage({ params }: { params: { slug: string
   const supabase = createServiceRoleClient()
 
   // 1) prendi la categoria dal DB
-  const { data: cat, error: catErr } = await supabase
-    .from<Category>('categories')
-    .select('id, slug, name')
-    .eq('slug', slug)
-    .maybeSingle()
+const { data: cat, error: catErr } = await supabase
+  .from('categories')                          // ⬅️ senza <Category>
+  .select('id, slug, name')
+  .eq('slug', slug)
+  .maybeSingle()
+
   if (catErr) throw new Error(catErr.message)
   if (!cat) {
     return (
@@ -66,18 +78,22 @@ export default async function CategoriaPage({ params }: { params: { slug: string
         <p className="text-silver-400 mt-2">
           Aggiungila nella tabella <code>categories</code>.
         </p>
-        <Link href="/listino" className="btn mt-4">Vai al listino</Link>
+        <Link href="/listino" className="btn mt-4">
+          Vai al listino
+        </Link>
       </div>
     )
   }
 
   // 2) servizi collegati via FK
-  const { data: svc, error: svcErr } = await supabase
-    .from<Service>('services')
-    .select('id, name, duration_minutes, price_cents, image_url, description')
-    .eq('category_id', cat.id)
-    .eq('active', true)
-    .order('name', { ascending: true })
+const { data: svc, error: svcErr } = await supabase
+  .from('services')                            // ⬅️ senza <Service>
+  .select('id, name, duration_minutes, price_cents, image_url, description')
+  .eq('category_id', cat.id)
+  .eq('active', true)
+  .order('name', { ascending: true })
+
+
   if (svcErr) throw new Error(svcErr.message)
   const services = (svc ?? []) as Service[]
 
