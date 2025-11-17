@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '../../lib/supabaseClient'
 
 export const dynamic = 'force-dynamic'
 
-export default function LoginPage() {
+function LoginContent() {
   const supabase = createClient()
   const router = useRouter()
   const qp = useSearchParams()
@@ -33,14 +33,12 @@ export default function LoginPage() {
         setAlreadyLogged(true)
         setUserEmail(user.email ?? null)
 
-        // opzionale: controllo ruolo in profiles
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .maybeSingle()
 
-        // se non usi davvero profiles, consideriamo ok di default
         setIsStaff(profile?.role === 'staff' || !profile)
       }
     })()
@@ -59,7 +57,6 @@ export default function LoginPage() {
       return
     }
 
-    // destinazione dopo login (?next=/admin/agenda altrimenti default)
     const next = qp.get('next') || '/admin/services'
     router.replace(next)
   }
@@ -78,7 +75,7 @@ export default function LoginPage() {
 
   if (!mounted) return null
 
-  // UI se sei già loggato
+  // UI se sei già loggata
   if (alreadyLogged) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-night-900">
@@ -155,5 +152,21 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-night-900">
+          <div className="card max-w-md w-full text-center text-silver-100">
+            Caricamento login…
+          </div>
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   )
 }
