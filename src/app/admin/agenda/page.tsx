@@ -22,11 +22,26 @@ const BLOCKING_STATUSES = new Set(['booked', 'confirmed', 'done'])
 // 0=Dom ... 6=Sab (orari di apertura esempio)
 const OPENING_HOURS: Record<number, { start: string; end: string }[]> = {
   0: [],
-  1: [{ start: '09:00', end: '13:00' }, { start: '14:00', end: '19:00' }],
-  2: [{ start: '09:00', end: '13:00' }, { start: '14:00', end: '19:00' }],
-  3: [{ start: '09:00', end: '13:00' }, { start: '14:00', end: '19:00' }],
-  4: [{ start: '09:00', end: '13:00' }, { start: '14:00', end: '19:00' }],
-  5: [{ start: '09:00', end: '13:00' }, { start: '14:00', end: '19:00' }],
+  1: [
+    { start: '09:00', end: '13:00' },
+    { start: '14:00', end: '19:00' },
+  ],
+  2: [
+    { start: '09:00', end: '13:00' },
+    { start: '14:00', end: '19:00' },
+  ],
+  3: [
+    { start: '09:00', end: '13:00' },
+    { start: '14:00', end: '19:00' },
+  ],
+  4: [
+    { start: '09:00', end: '13:00' },
+    { start: '14:00', end: '19:00' },
+  ],
+  5: [
+    { start: '09:00', end: '13:00' },
+    { start: '14:00', end: '19:00' },
+  ],
   6: [{ start: '09:00', end: '13:00' }],
 }
 
@@ -38,8 +53,9 @@ type Appt = {
   starts_at: string
   ends_at: string
   status: 'booked' | 'confirmed' | 'done' | 'cancelled'
-  customers?: { full_name: string } | null
-  services?: { name: string; duration_minutes: number } | null
+  // Supabase ti restituisce array di relazioni, non singolo oggetto
+  customers?: { full_name: string }[] | null
+  services?: { name: string; duration_minutes: number }[] | null
 }
 
 /** ---------- Utils ---------- */
@@ -92,7 +108,8 @@ export default function AgendaWeekPage() {
     if (error) {
       setError(error.message)
     } else {
-      setAppts(data ?? [])
+      // 👇 cast esplicito così TS smette di urlare
+      setAppts((data ?? []) as unknown as Appt[])
     }
     setLoading(false)
   }
@@ -154,7 +171,9 @@ export default function AgendaWeekPage() {
   if (!mounted || loading) return <div className="card">Caricamento agenda…</div>
   if (error) return <div className="card text-red-500">Errore: {error}</div>
 
-  const weekLabel = `${format(days[0], 'd LLL', { locale: it })} – ${format(days[6], 'd LLL y', { locale: it })}`
+  const weekLabel = `${format(days[0], 'd LLL', { locale: it })} – ${format(days[6], 'd LLL y', {
+    locale: it,
+  })}`
 
   // righe orarie dal min open al max close (per tutta la settimana)
   let minOpen = 24 * 60
@@ -178,42 +197,44 @@ export default function AgendaWeekPage() {
   return (
     <div className="space-y-4">
       {/* Toolbar minimal con ritorno alla dashboard */}
-<div className="card flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-  
-  <div className="flex flex-wrap items-center gap-2">
-    <a
-      href="/admin"
-      className="inline-flex items-center px-3 py-2 border border-white/15 hover:bg-white/5"
-      title="Torna alla Dashboard"
-    >
-      ← Dashboard
-    </a>
+      <div className="card flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href="/admin"
+            className="inline-flex items-center px-3 py-2 border border-white/15 hover:bg-white/5"
+            title="Torna alla Dashboard"
+          >
+            ← Dashboard
+          </a>
 
-    <a
-      href="/admin/appointments"
-      className="inline-flex items-center px-3 py-2 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 transition-colors"
-      title="Vai alla gestione appuntamenti"
-    >
-      Gestione appuntamenti
-    </a>
+          <a
+            href="/admin/appointments"
+            className="inline-flex items-center px-3 py-2 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 transition-colors"
+            title="Vai alla gestione appuntamenti"
+          >
+            Gestione appuntamenti
+          </a>
 
-    <button className="btn" onClick={() => goto(-7)}>← Settimana prec</button>
-    <button
-      className="btn"
-      onClick={() => {
-        const now = startOfWeek(new Date(), { weekStartsOn: 1 })
-        setWeekStart(now)
-        router.push(`/admin/agenda?week=${format(now, 'yyyy-MM-dd')}`)
-      }}
-    >
-      Oggi
-    </button>
-    <button className="btn" onClick={() => goto(+7)}>Settimana succ →</button>
+          <button className="btn" onClick={() => goto(-7)}>
+            ← Settimana prec
+          </button>
+          <button
+            className="btn"
+            onClick={() => {
+              const now = startOfWeek(new Date(), { weekStartsOn: 1 })
+              setWeekStart(now)
+              router.push(`/admin/agenda?week=${format(now, 'yyyy-MM-dd')}`)
+            }}
+          >
+            Oggi
+          </button>
+          <button className="btn" onClick={() => goto(+7)}>
+            Settimana succ →
+          </button>
 
-    <div className="ml-3 font-medium text-white/90">{weekLabel}</div>
-  </div>
-</div>
-
+          <div className="ml-3 font-medium text-white/90">{weekLabel}</div>
+        </div>
+      </div>
 
       {/* Griglia con contrasto migliorato */}
       <div className="overflow-auto">
@@ -231,7 +252,11 @@ export default function AgendaWeekPage() {
             const t = addMinutes(first, rowIdx * SLOT_MINUTES)
             const label = format(t, 'HH:mm')
             return (
-              <div key={rowIdx} className="grid border-t border-white/10" style={{ gridTemplateColumns: `120px repeat(7, 1fr)` }}>
+              <div
+                key={rowIdx}
+                className="grid border-t border-white/10"
+                style={{ gridTemplateColumns: `120px repeat(7, 1fr)` }}
+              >
                 <div className="p-2 text-sm text-white/80 bg-black/20">{label}</div>
                 {days.map((day, colIdx) => {
                   const [hh, mm] = label.split(':').map(Number)
@@ -245,29 +270,49 @@ export default function AgendaWeekPage() {
                     windows.some((w) => {
                       const wStart = withTime(day, w.start)
                       const wEnd = withTime(day, w.end)
-                      return (!isBefore(slotStart, wStart) && isBefore(slotEnd, wEnd)) || isEqual(slotEnd, wEnd)
+                      return (
+                        (!isBefore(slotStart, wStart) && isBefore(slotEnd, wEnd)) ||
+                        isEqual(slotEnd, wEnd)
+                      )
                     }) || false
                   if (!inOpen) {
-                    return <div key={colIdx} className="p-2 bg-black/30 border-l border-white/10" />
+                    return (
+                      <div
+                        key={colIdx}
+                        className="p-2 bg-black/30 border-l border-white/10"
+                      />
+                    )
                   }
 
                   // appuntamento sullo slot?
                   const appt = appts.find(
                     (a) =>
                       BLOCKING_STATUSES.has(a.status) &&
-                      overlaps(slotStart, slotEnd, parseISO(a.starts_at), parseISO(a.ends_at)),
+                      overlaps(
+                        slotStart,
+                        slotEnd,
+                        parseISO(a.starts_at),
+                        parseISO(a.ends_at),
+                      ),
                   )
 
                   // Celle con contrasto più alto
                   if (appt) {
+                    const customerName = appt.customers?.[0]?.full_name ?? 'Occupato'
+                    const serviceName = appt.services?.[0]?.name ?? ''
+                    const title = `${customerName} • ${serviceName} • ${format(
+                      parseISO(appt.starts_at),
+                      'HH:mm',
+                    )}–${format(parseISO(appt.ends_at), 'HH:mm')}`
+
                     return (
                       <div
                         key={colIdx}
                         className="p-2 border-l border-white/10 bg-red-600/25 text-xs text-white"
-                        title={`${appt.customers?.full_name ?? ''} • ${appt.services?.name ?? ''} • ${format(parseISO(appt.starts_at), 'HH:mm')}–${format(parseISO(appt.ends_at), 'HH:mm')}`}
+                        title={title}
                       >
-                        <div className="font-semibold truncate">{appt.customers?.full_name ?? 'Occupato'}</div>
-                        <div className="truncate text-white/90">{appt.services?.name ?? ''}</div>
+                        <div className="font-semibold truncate">{customerName}</div>
+                        <div className="truncate text-white/90">{serviceName}</div>
                       </div>
                     )
                   }
@@ -291,25 +336,34 @@ export default function AgendaWeekPage() {
 
       {/* Riepilogo appuntamenti (debug / accessibilità) */}
       <div className="card">
-        <h3 className="text-base font-semibold mb-2 text-white">Appuntamenti (questa settimana)</h3>
+        <h3 className="text-base font-semibold mb-2 text-white">
+          Appuntamenti (questa settimana)
+        </h3>
         {appts.length === 0 ? (
           <p className="text-sm text-white/80">Nessun appuntamento.</p>
         ) : (
           <ul className="space-y-1 text-sm text-white/90">
-            {appts.map((a) => (
-              <li key={a.id}>
-                <strong>{a.customers?.full_name ?? '—'}</strong> • {a.services?.name ?? '—'} —{' '}
-                {new Date(a.starts_at).toLocaleString('it-IT', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  day: '2-digit',
-                  month: '2-digit',
-                })}
-                {' → '}
-                {new Date(a.ends_at).toLocaleString('it-IT', { hour: '2-digit', minute: '2-digit' })}{' '}
-                • <em>{a.status}</em>
-              </li>
-            ))}
+            {appts.map((a) => {
+              const customerName = a.customers?.[0]?.full_name ?? '—'
+              const serviceName = a.services?.[0]?.name ?? '—'
+              return (
+                <li key={a.id}>
+                  <strong>{customerName}</strong> • {serviceName} —{' '}
+                  {new Date(a.starts_at).toLocaleString('it-IT', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    day: '2-digit',
+                    month: '2-digit',
+                  })}
+                  {' → '}
+                  {new Date(a.ends_at).toLocaleString('it-IT', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}{' '}
+                  • <em>{a.status}</em>
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>
