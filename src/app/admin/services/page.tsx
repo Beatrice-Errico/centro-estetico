@@ -9,15 +9,17 @@ type Service = {
   duration_minutes: number
   price_cents: number
   active: boolean
-  category: 'benessere' | 'bellezza' | 'vitalita'
+  // Supabase restituisce un ARRAY di relazioni categories(...)
+  categories?: { slug: string }[] | null
 }
 
 async function getServices(): Promise<Service[]> {
   const supabase = createServiceRoleClient()
   const { data, error } = await supabase
     .from('services')
-    .select('id, name, duration_minutes, price_cents, active, category')
+    .select('id, name, duration_minutes, price_cents, active, categories(slug)')
     .order('name', { ascending: true })
+
   if (error) throw new Error(error.message)
   return (data ?? []) as Service[]
 }
@@ -33,16 +35,34 @@ export default async function ServicesPage() {
         <form action={addService as any} className="space-y-3">
           <div>
             <label className="label">Nome</label>
-            <input name="name" className="input" placeholder="Manicure, Massaggio..." required />
+            <input
+              name="name"
+              className="input"
+              placeholder="Manicure, Massaggio..."
+              required
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Durata (min)</label>
-              <input name="duration_minutes" type="number" min={1} className="input" required />
+              <input
+                name="duration_minutes"
+                type="number"
+                min={1}
+                className="input"
+                required
+              />
             </div>
             <div>
               <label className="label">Prezzo (€)</label>
-              <input name="price" type="number" step="0.01" min={0} className="input" required />
+              <input
+                name="price"
+                type="number"
+                step="0.01"
+                min={0}
+                className="input"
+                required
+              />
             </div>
           </div>
           <div>
@@ -53,7 +73,9 @@ export default async function ServicesPage() {
               <option value="vitalita">Vitalità</option>
             </select>
           </div>
-          <button className="btn" type="submit">Salva</button>
+          <button className="btn" type="submit">
+            Salva
+          </button>
         </form>
       </div>
 
@@ -71,23 +93,30 @@ export default async function ServicesPage() {
             </tr>
           </thead>
           <tbody>
-            {services.map((s) => (
-              <tr key={s.id} className="tr">
-                <td className="td">{s.name}</td>
-                <td className="td capitalize">{s.category}</td>
-                <td className="td">{s.duration_minutes} min</td>
-                <td className="td">€ {(s.price_cents / 100).toFixed(2)}</td>
-                <td className="td">
-                  <form action={deleteServiceAction as any}>
-                    <input type="hidden" name="id" value={s.id} />
-                    <button className="btn" type="submit">Elimina</button>
-                  </form>
-                </td>
-              </tr>
-            ))}
+            {services.map((s) => {
+              const categorySlug = s.categories?.[0]?.slug ?? '—'
+              return (
+                <tr key={s.id} className="tr">
+                  <td className="td">{s.name}</td>
+                  <td className="td capitalize">{categorySlug}</td>
+                  <td className="td">{s.duration_minutes} min</td>
+                  <td className="td">€ {(s.price_cents / 100).toFixed(2)}</td>
+                  <td className="td">
+                    <form action={deleteServiceAction as any}>
+                      <input type="hidden" name="id" value={s.id} />
+                      <button className="btn" type="submit">
+                        Elimina
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              )
+            })}
             {services.length === 0 && (
               <tr>
-                <td className="td" colSpan={5}>Nessun servizio.</td>
+                <td className="td" colSpan={5}>
+                  Nessun servizio.
+                </td>
               </tr>
             )}
           </tbody>
