@@ -29,3 +29,16 @@ export async function addService(formData: FormData) {
   if (error) throw new Error(error.message)
   revalidatePath('/admin/services')
 }
+export async function deleteServiceAction(formData: FormData) {
+  'use server'
+
+  const id = formData.get('id') as string | null
+  if (!id) return
+
+  const supabase = createServiceRoleClient()
+
+  await supabase
+    .from('services')
+    .delete()
+    .eq('id', id)
+}
