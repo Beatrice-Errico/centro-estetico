@@ -11,11 +11,13 @@ type Service = {
   duration_minutes: number
 }
 
-export default async function BookingPage({
-  searchParams,
-}: {
-  searchParams?: { serviceId?: string }
-}) {
+type BookingPageProps = {
+  searchParams?: Promise<{
+    serviceId?: string
+  }>
+}
+
+export default async function BookingPage({ searchParams }: BookingPageProps) {
   const supabase = createServiceRoleClient()
 
   const { data, error } = await supabase
@@ -27,7 +29,11 @@ export default async function BookingPage({
   if (error) throw new Error(error.message)
 
   const services: Service[] = data ?? []
-  const initialServiceId = (searchParams?.serviceId ?? '').toString()
+
+  // Next in questa versione ti passa searchParams come Promise,
+  // quindi li "risolviamo" qui
+  const resolvedSearchParams = (await searchParams) ?? {}
+  const initialServiceId = (resolvedSearchParams.serviceId ?? '').toString()
 
   return (
     <div className="min-h-screen bg-night-900">
