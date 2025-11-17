@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base */
+html, body { height: 100%; }
+body {
+  @apply bg-night-900 text-silver-200 antialiased;
+}
+
+/* Contenitore arioso */
+.container { @apply mx-auto max-w-6xl px-6; }
+
+/* Tipografia minimale e spaziata */
+h1, h2, h3 {
+  @apply tracking-wide2 text-silver-100;
+}
+p, small, label, input, button {
+  @apply tracking-wide;
+}
+
+/* Component primitives (piatte, niente rounding) */
+.card {
+  @apply bg-night-800 border border-night-700 shadow-flat p-6;
+}
+.btn {
+  @apply inline-flex items-center justify-center px-5 py-2 text-sm font-medium
+         bg-brand-500 text-silver-100 hover:bg-brand-600 transition;
+}
+.btn-ghost {
+  @apply inline-flex items-center justify-center px-4 py-2 text-sm
+         text-silver-200 hover:bg-night-800 border border-night-700;
+}
+.input {
+  @apply w-full bg-night-900 text-silver-100 border border-night-700
+         focus:border-silver-400 focus:ring-silver-400;
+}
+.label { @apply block mb-1 text-sm text-silver-400; }
+
+/* Tabelle piatte */
+.table { @apply w-full text-sm; }
+.th    { @apply text-left text-silver-400 font-medium pb-2; }
+.tr    { @apply border-t border-night-700; }
+.td    { @apply py-2; }
+
+@keyframes fadeInUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@keyframes underline-laser {
+  0% {
+    background-position: 200% 0;
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    background-position: -200% 0;
+    opacity: 0.4;
+  }
+}
+
+.h2-laser {
+  position: relative;
+  display: inline-block;     /* così l'underline può essere 100% del titolo */
+  padding-bottom: 0.9rem;
+}
+
+.h2-laser::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #B0B7C3,
+    #ffffff,
+    #B0B7C3,
+    transparent
+  );
+  background-size: 200% 100%;
+  opacity: 0;                /* parte “spenta” finché non entra in view */
+}
+.h2-laser.is-on::after {
+  animation: underline-laser 2.6s ease-in-out infinite;
+  opacity: 1;
+}
+
+
+/* --- Micro animazioni booking --- */
+
+/* --- Animazione slot orari con bagliore ambrato --- */
+.slot-button {
+  position: relative;
+  transform-origin: center;
+  transition:
+    transform 0.18s ease-out,
+    box-shadow 0.18s ease-out,
+    background-color 0.18s ease-out,
+    border-color 0.18s ease-out;
+}
+
+.slot-button--active {
+  animation: slot-pop 0.18s ease-out;
+}
+
+@keyframes slot-pop {
+  from {
+    transform: scale3d(1, 0.94, 1); /* schiacciato in altezza */
+    box-shadow:
+      0 0 0 0 rgba(249, 186, 120, 0.0),
+      0 0 0 0 rgba(0, 0, 0, 0.0);
+  }
+  to {
+    transform: scale3d(1, 1.04, 1); /* rimbalzo verticale più evidente */
+    box-shadow:
+      0 0 0 1px rgba(249, 186, 120, 0.9),        /* anello ambrato netto */
+      0 0 24px 0 rgba(249, 186, 120, 0.45);      /* glow morbido attorno */
+  }
+}
+
+
+/* Glow soft quando il form è pronto per l'invio */
+@keyframes ready-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(248, 250, 252, 0.0);
+  }
+  40% {
+    box-shadow: 0 0 0 6px rgba(248, 250, 252, 0.16);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(248, 250, 252, 0.0);
+  }
+}
+
+.btn-ready {
+  position: relative;
+  z-index: 0;
+}
+
+.btn-ready::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 1px solid rgba(248, 250, 252, 0.35);
+  pointer-events: none;
+  animation: ready-glow 1.4s ease-out infinite;
+}
